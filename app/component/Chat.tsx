@@ -1,31 +1,25 @@
 "use client";
 import { useState } from "react";
-import { speak } from "@/app/api/tts";
+import AudioInput from "./AudioInput";
+import { speak } from "../api/tts";
 
 export default function Chat() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
     { role: "assistant", content: "こんにちは！自己紹介をしましょう。" },
   ]);
-  const [input, setInput] = useState("");
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
-    
-    const userMessage = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
+  const handleUserMessage = async (userInput: string) => {
+    setMessages((prev) => [...prev, { role: "user", content: userInput }]);
 
     const res = await fetch("/api/chat", {
       method: "POST",
-      body: JSON.stringify({ message: input }),
+      body: JSON.stringify({ message: userInput }),
       headers: { "Content-Type": "application/json" },
     });
     const data = await res.json();
 
-    const aiMessage = { role: "assistant", content: data.response };
-    setMessages((prev) => [...prev, aiMessage]);
-    
-    speak(data.response); // AIの返答を音声再生
-    setInput("");
+    setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+    speak(data.response);
   };
 
   return (
@@ -37,19 +31,8 @@ export default function Chat() {
           </p>
         ))}
       </div>
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        className="border p-2 w-full mt-2"
-        placeholder="メッセージを入力..."
-      />
-      <button
-        onClick={handleSendMessage}
-        className="bg-blue-500 text-white p-2 rounded mt-2 w-full"
-      >
-        送信
-      </button>
+      
+      <AudioInput onTranscribe={handleUserMessage} />
     </div>
   );
 }
